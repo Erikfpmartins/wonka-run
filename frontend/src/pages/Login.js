@@ -5,7 +5,7 @@ import { T, LogoSVG, GradLine } from '../theme';
 const ORG_CODE = 'org2025';
 
 export default function Login({ onLogin }) {
-  const { login, API } = useApp();
+  const { login } = useApp();
   const [codigo, setCodigo] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
@@ -17,32 +17,11 @@ export default function Login({ onLogin }) {
     setErro('');
     setLoading(true);
     try {
-      if (isOrg) {
-        // Login organizador com senha
-        const tipo = await login(codigo.trim(), senha.trim());
-        onLogin(tipo);
-      } else {
-        // Login equipe sem senha — usa o codigo como senha também
-        const res = await fetch(`${API}/api/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ codigo: codigo.trim(), senha: codigo.trim() })
-        });
-        if (!res.ok) {
-          // Tenta com senha vazia
-          const res2 = await fetch(`${API}/api/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ codigo: codigo.trim(), senha: '' })
-          });
-          if (!res2.ok) throw new Error('Código não encontrado');
-          const data2 = await res2.json();
-          onLogin(data2.tipo);
-          return;
-        }
-        const data = await res.json();
-        onLogin(data.tipo);
-      }
+      // Tanto org quanto equipe usam a mesma função login do contexto
+      // Para equipe, senha = codigo (backend aceita qualquer equipe válida)
+      const senhaFinal = isOrg ? senha.trim() : codigo.trim();
+      const tipo = await login(codigo.trim(), senhaFinal);
+      onLogin(tipo);
     } catch (err) {
       setErro(err.message);
     } finally {
@@ -73,7 +52,6 @@ export default function Login({ onLogin }) {
             />
           </div>
 
-          {/* Campo de senha só aparece para o organizador */}
           {isOrg && (
             <div style={s.field}>
               <label style={s.label}>Senha</label>
