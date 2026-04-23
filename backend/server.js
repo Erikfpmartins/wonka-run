@@ -20,6 +20,9 @@ const supabase = createClient(
   process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4bmJhYnZxcWpnemJ1bWtpandhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjI0ODksImV4cCI6MjA5MjQzODQ4OX0.t0VX8VXLund1sIS9vBBl4-3HMzucdZSRLkJPZ6FnJNQ'
 );
 
+// ─── EQUIPES CONECTADAS (em memória) ───
+const equipesConectadas = new Set();
+
 // ─── HELPERS ───
 function shuffle(arr) {
   const a = [...arr];
@@ -342,10 +345,26 @@ app.post('/api/equipe/:codigo/tempo', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── EQUIPES CONECTADAS ───
+app.get('/api/org/conectadas', (req, res) => {
+  res.json(Array.from(equipesConectadas));
+});
+
 // ─── SOCKET ───
 io.on('connection', (socket) => {
   socket.on('join_org', () => socket.join('organizador'));
-  socket.on('join_equipe', (codigo) => socket.join(`equipe_${codigo}`));
+  socket.on('join_equipe', (codigo) => {
+    socket.join(`equipe_${codigo}`);
+    socket.equipe = codigo;
+    equipesConectadas.add(codigo);
+    io.to('organizador').emit('equipes_conectadas', Array.from(equipesConectadas));
+  });
+  socket.on('disconnect', () => {
+    if (socket.equipe) {
+      equipesConectadas.delete(socket.equipe);
+      io.to('organizador').emit('equipes_conectadas', Array.from(equipesConectadas));
+    }
+  });
 });
 
 // ─── FALLBACK REACT ───
