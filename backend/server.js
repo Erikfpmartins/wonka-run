@@ -293,7 +293,7 @@ app.post('/api/equipe/:codigo/responder', async (req, res) => {
 
 // ─── CONFIRMAR CHECKPOINT ───
 app.post('/api/equipe/:codigo/checkpoint', async (req, res) => {
-  const { codigoDigitado } = req.body;
+  const { codigoDigitado, tempoAtual } = req.body;
   const { data: equipe } = await supabase.from('equipes').select('*').eq('codigo', req.params.codigo).single();
   if (!equipe || equipe.terminado) return res.status(400).json({ erro: 'Invalido' });
 
@@ -308,8 +308,9 @@ app.post('/api/equipe/:codigo/checkpoint', async (req, res) => {
   io.emit('notif_checkpoint', { equipe: equipe.nome, checkpoint: equipe.checkpoint_atual + 1 });
 
   if (cp.ultimo) {
+    const tempoFinal = tempoAtual || equipe.tempo_atual;
     await supabase.from('equipes').update({
-      terminado: true, tempo_final: equipe.tempo_atual,
+      terminado: true, tempo_final: tempoFinal, tempo_atual: tempoFinal,
       aguardando_checkpoint: false, aguardando_pergunta: false
     }).eq('codigo', req.params.codigo);
 
