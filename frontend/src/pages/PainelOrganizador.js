@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { T, LogoSVG } from '../theme';
+import { Sino } from '../components/Notificacoes';
 
 const TABS = ['Controle', 'Equipes', 'Checkpoints', 'Perguntas'];
 
 export default function PainelOrganizador() {
-  const { API, socket, logout } = useApp();
+  const { API, socket, logout, historico } = useApp();
   const [tab, setTab] = useState('Controle');
   const [equipes, setEquipes] = useState([]);
   const [checkpoints, setCheckpoints] = useState([]);
@@ -112,6 +113,7 @@ export default function PainelOrganizador() {
           <div style={{ ...s.badge, background: jogoStatus.iniciado ? 'rgba(184,228,54,0.15)' : 'rgba(255,255,255,0.05)', color: jogoStatus.iniciado ? T.verde : T.textMuted, border: `0.5px solid ${jogoStatus.iniciado ? T.verde : T.border}` }}>
             {jogoStatus.iniciado ? 'AO VIVO' : 'AGUARDANDO'}
           </div>
+          <Sino />
           <button style={s.logoutBtn} onClick={logout}>Sair</button>
         </div>
       </div>
@@ -150,10 +152,9 @@ export default function PainelOrganizador() {
                 {e.terminado && <span style={{ color: T.verde, fontSize: 13, fontWeight: 700 }}>FIM</span>}
               </div>
             ))}
-            <p style={{ ...s.secLabel, marginTop: 28 }}>Notificacoes</p>
-            {notifs.length === 0 ? <p style={s.empty}>Nenhuma ainda.</p> : notifs.map(n => (
+            <p style={{ ...s.secLabel, marginTop: 28 }}>Notificações do jogo</p>
+            {historico.length === 0 ? <p style={s.empty}>Nenhuma ainda.</p> : historico.map(n => (
               <div key={n.id} style={s.notifItem}>
-                <span style={{ color: T.textMuted, fontSize: 11, minWidth: 38 }}>{n.ts}</span>
                 <span style={{ color: T.textSec, fontSize: 13 }}>{n.msg}</span>
               </div>
             ))}
