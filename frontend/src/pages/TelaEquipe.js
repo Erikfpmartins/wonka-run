@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../contexts/AppContext';
 import { T, LogoSVG } from '../theme';
+import { Sino } from '../components/Notificacoes';
 
 export default function TelaEquipe() {
   const { user, socket, jogoIniciado, addNotificacao, API } = useApp();
@@ -73,7 +74,7 @@ export default function TelaEquipe() {
     } else {
       setResultadoResposta('errada');
       setAguardando(true);
-      setContagemPenalidade(30);
+      setContagemPenalidade(60);
       // Busca explicação da alternativa errada escolhida
       const explicacoes = estado?.perguntaAtual?.explicacoes;
       setExplicacaoErro(explicacoes && explicacoes[idx] ? explicacoes[idx] : '');
@@ -153,9 +154,12 @@ export default function TelaEquipe() {
           <p style={s.headerLabel}>Equipe</p>
           <p style={s.headerNome}>{user.nome}</p>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <p style={s.headerLabel}>Tempo</p>
-          <p style={s.headerTempo}>{fmt(tempo)}</p>
+        <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div>
+            <p style={s.headerLabel}>Tempo</p>
+            <p style={s.headerTempo}>{fmt(tempo)}</p>
+          </div>
+          <Sino />
         </div>
       </div>
 
@@ -205,10 +209,10 @@ export default function TelaEquipe() {
                   </p>
                 ) : null}
                 <p style={{ color: T.textSec, margin: 0, fontSize: 14 }}>
-                  Aguarde <span style={{ color: T.textPrim, fontWeight: 700 }}>{contagemPenalidade}s</span> para ver o proximo checkpoint
+                  Aguarde <span style={{ color: T.textPrim, fontWeight: 700 }}>{contagemPenalidade}s</span> para continuar
                 </p>
                 <div style={{ height: 4, background: T.border, borderRadius: 2, marginTop: 16, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', background: T.gradLogo, width: `${(contagemPenalidade / 30) * 100}%`, transition: 'width 1s linear', borderRadius: 2 }} />
+                  <div style={{ height: '100%', background: T.gradLogo, width: `${(contagemPenalidade / 60) * 100}%`, transition: 'width 1s linear', borderRadius: 2 }} />
                 </div>
               </div>
             )}
