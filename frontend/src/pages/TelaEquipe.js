@@ -89,7 +89,7 @@ export default function TelaEquipe() {
 
   const enviarCodigo = async () => {
     setErroCheckpoint('');
-    const res = await fetch(`${API}/api/equipe/${user.codigo}/checkpoint`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigoDigitado: codigoLocal }) });
+    const res = await fetch(`${API}/api/equipe/${user.codigo}/checkpoint`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigoDigitado: codigoLocal, tempoAtual: tempo }) });
     const data = await res.json();
     if (!data.ok) { setErroCheckpoint(data.erro || 'Codigo incorreto'); return; }
     setCodigoLocal('');
