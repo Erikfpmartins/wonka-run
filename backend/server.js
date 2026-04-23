@@ -272,7 +272,7 @@ app.post('/api/equipe/:codigo/responder', async (req, res) => {
 
   if (correta) {
     await supabase.from('equipes').update({
-      tempo_atual: Math.max(0, equipe.tempo_atual - 30),
+      tempo_atual: Math.max(0, equipe.tempo_atual - 60),
       aguardando_pergunta: false,
       aguardando_checkpoint: true
     }).eq('codigo', req.params.codigo);
