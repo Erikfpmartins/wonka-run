@@ -20,6 +20,9 @@ const supabase = createClient(
   process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4bmJhYnZxcWpnemJ1bWtpandhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY4NjI0ODksImV4cCI6MjA5MjQzODQ4OX0.t0VX8VXLund1sIS9vBBl4-3HMzucdZSRLkJPZ6FnJNQ'
 );
 
+// ─── EQUIPES CONECTADAS (em memória) ───
+const equipesConectadas = new Set();
+
 // ─── HELPERS ───
 function shuffle(arr) {
   const a = [...arr];
@@ -272,7 +275,7 @@ app.post('/api/equipe/:codigo/responder', async (req, res) => {
 
   if (correta) {
     await supabase.from('equipes').update({
-      tempo_atual: Math.max(0, equipe.tempo_atual - 30),
+      tempo_atual: Math.max(0, equipe.tempo_atual - 60),
       aguardando_pergunta: false,
       aguardando_checkpoint: true
     }).eq('codigo', req.params.codigo);
@@ -290,7 +293,7 @@ app.post('/api/equipe/:codigo/responder', async (req, res) => {
 
 // ─── CONFIRMAR CHECKPOINT ───
 app.post('/api/equipe/:codigo/checkpoint', async (req, res) => {
-  const { codigoDigitado } = req.body;
+  const { codigoDigitado, tempoAtual } = req.body;
   const { data: equipe } = await supabase.from('equipes').select('*').eq('codigo', req.params.codigo).single();
   if (!equipe || equipe.terminado) return res.status(400).json({ erro: 'Invalido' });
 
@@ -305,8 +308,9 @@ app.post('/api/equipe/:codigo/checkpoint', async (req, res) => {
   io.emit('notif_checkpoint', { equipe: equipe.nome, checkpoint: equipe.checkpoint_atual + 1 });
 
   if (cp.ultimo) {
+    const tempoFinal = tempoAtual || equipe.tempo_atual;
     await supabase.from('equipes').update({
-      terminado: true, tempo_final: equipe.tempo_atual,
+      terminado: true, tempo_final: tempoFinal, tempo_atual: tempoFinal,
       aguardando_checkpoint: false, aguardando_pergunta: false
     }).eq('codigo', req.params.codigo);
 
@@ -342,10 +346,26 @@ app.post('/api/equipe/:codigo/tempo', async (req, res) => {
   res.json({ ok: true });
 });
 
+// ─── EQUIPES CONECTADAS ───
+app.get('/api/org/conectadas', (req, res) => {
+  res.json(Array.from(equipesConectadas));
+});
+
 // ─── SOCKET ───
 io.on('connection', (socket) => {
   socket.on('join_org', () => socket.join('organizador'));
-  socket.on('join_equipe', (codigo) => socket.join(`equipe_${codigo}`));
+  socket.on('join_equipe', (codigo) => {
+    socket.join(`equipe_${codigo}`);
+    socket.equipe = codigo;
+    equipesConectadas.add(codigo);
+    io.to('organizador').emit('equipes_conectadas', Array.from(equipesConectadas));
+  });
+  socket.on('disconnect', () => {
+    if (socket.equipe) {
+      equipesConectadas.delete(socket.equipe);
+      io.to('organizador').emit('equipes_conectadas', Array.from(equipesConectadas));
+    }
+  });
 });
 
 // ─── FALLBACK REACT ───

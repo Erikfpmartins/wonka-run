@@ -11,7 +11,7 @@ const API = process.env.REACT_APP_API_URL ||
 export function formatarNotificacao(tipo, dados) {
   const { equipe, checkpoint } = dados;
   switch (tipo) {
-    case 'erro':       return `${equipe} errou a pergunta e vai ter que esperar 30s para continuar`;
+    case 'erro':       return `${equipe} errou a pergunta e vai ter que esperar 1 minuto para continuar`;
     case 'acerto':     return `${equipe} acertou a pergunta e avança para o checkpoint ${checkpoint}`;
     case 'checkpoint': return `${equipe} chegou ao checkpoint ${checkpoint}`;
     case 'lideranca':  return `${equipe} assumiu a liderança LetzBora!`;
@@ -25,6 +25,7 @@ export function AppProvider({ children }) {
   const [socket, setSocket] = useState(null);
   const [jogoIniciado, setJogoIniciado] = useState(false);
   const [notificacoes, setNotificacoes] = useState([]);
+  const [historico, setHistorico] = useState([]);
 
   useEffect(() => {
     const s = io(API);
@@ -54,9 +55,15 @@ export function AppProvider({ children }) {
   }, [socket]);
 
   const addNotificacao = (msg) => {
-    const id = Date.now();
-    setNotificacoes(n => [...n, { id, msg }]);
+    const id = Date.now() + Math.random();
+    const notif = { id, msg };
+    setHistorico(h => [notif, ...h]);
+    setNotificacoes(n => [...n, notif]);
     setTimeout(() => setNotificacoes(n => n.filter(x => x.id !== id)), 6000);
+  };
+
+  const dispensarNotificacao = (id) => {
+    setNotificacoes(n => n.filter(x => x.id !== id));
   };
 
   const login = async (codigo, senha) => {
@@ -74,7 +81,7 @@ export function AppProvider({ children }) {
   const logout = () => setUser(null);
 
   return (
-    <AppContext.Provider value={{ user, login, logout, socket, jogoIniciado, setJogoIniciado, notificacoes, addNotificacao, API }}>
+    <AppContext.Provider value={{ user, login, logout, socket, jogoIniciado, setJogoIniciado, notificacoes, historico, dispensarNotificacao, addNotificacao, API }}>
       {children}
     </AppContext.Provider>
   );
