@@ -77,7 +77,7 @@ export default function Notificacoes() {
 
 const s = {
   container: {
-    position: 'fixed', top: 70, right: 16, zIndex: 9998,
+    position: 'fixed', top: 16, right: 16, zIndex: 9998,
     display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 300,
   },
   toast: {
