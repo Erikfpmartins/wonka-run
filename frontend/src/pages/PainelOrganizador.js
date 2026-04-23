@@ -14,6 +14,7 @@ export default function PainelOrganizador() {
   const [ranking, setRanking] = useState([]);
   const [notifs, setNotifs] = useState([]);
   const [jogoStatus, setJogoStatus] = useState({ iniciado: false });
+  const [conectadas, setConectadas] = useState([]);
   const [novaEquipe, setNovaEquipe] = useState({ nome: '', senha: '' });
   const [novoCp, setNovoCp] = useState({ nome: '', imagemMapa: null, imagemPreview: null, dica: '', codigoLocal: '', ultimo: false });
   const [novaPerg, setNovaPerg] = useState({
@@ -26,13 +27,14 @@ export default function PainelOrganizador() {
   const fmt = (s) => { if (!s && s !== 0) return '--:--'; return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; };
 
   const fetchAll = useCallback(async () => {
-    const [eq, cp, pe, st] = await Promise.all([
+    const [eq, cp, pe, st, con] = await Promise.all([
       fetch(`${API}/api/org/equipes`).then(r => r.json()),
       fetch(`${API}/api/org/checkpoints`).then(r => r.json()),
       fetch(`${API}/api/org/perguntas`).then(r => r.json()),
       fetch(`${API}/api/status`).then(r => r.json()),
+      fetch(`${API}/api/org/conectadas`).then(r => r.json()),
     ]);
-    setEquipes(eq); setCheckpoints(cp); setPerguntas(pe); setJogoStatus(st);
+    setEquipes(eq); setCheckpoints(cp); setPerguntas(pe); setJogoStatus(st); setConectadas(con || []);
   }, [API]);
 
   const fetchRanking = useCallback(async () => {
@@ -45,9 +47,10 @@ export default function PainelOrganizador() {
   useEffect(() => {
     if (!socket) return;
     socket.on('ranking_update', r => setRanking(r));
+    socket.on('equipes_conectadas', c => setConectadas(c || []));
     socket.on('equipe_checkpoint', ({ nome, checkpoint, numero }) => addNotif(`${nome} chegou ao checkpoint ${numero} (${checkpoint})`));
     socket.on('equipe_chegou', ({ nome, posicao, tempoFinal }) => addNotif(`${nome} finalizou! Posicao ${posicao}o - ${fmt(tempoFinal)}`));
-    return () => { socket.off('ranking_update'); socket.off('equipe_checkpoint'); socket.off('equipe_chegou'); };
+    return () => { socket.off('ranking_update'); socket.off('equipe_checkpoint'); socket.off('equipe_chegou'); socket.off('equipes_conectadas'); };
   }, [socket]);
 
   const addNotif = (msg) => {
@@ -170,15 +173,28 @@ export default function PainelOrganizador() {
               <button style={s.btnAdd} onClick={criarEquipe}>+ Adicionar equipe</button>
             </div>
             <p style={s.secLabel}>Equipes cadastradas ({equipes.length})</p>
-            {equipes.map(e => (
-              <div key={e.codigo} style={s.listItem}>
-                <div>
-                  <p style={s.listTitle}>{e.nome}</p>
-                  <p style={s.listSub}>Codigo: <span style={{ color: T.amber }}>{e.codigo}</span> &nbsp; Senha: {e.senha}</p>
+            <p style={{ color: T.textMuted, fontSize: 12, margin: '0 0 12px' }}>
+              {conectadas.length}/{equipes.length} equipes conectadas
+            </p>
+            {equipes.map(e => {
+              const online = conectadas.includes(e.codigo);
+              return (
+                <div key={e.codigo} style={s.listItem}>
+                  <div style={{ ...s.statusDot, background: online ? T.verde : T.border }} />
+                  <div style={{ flex: 1 }}>
+                    <p style={s.listTitle}>{e.nome}</p>
+                    <p style={s.listSub}>
+                      Codigo: <span style={{ color: T.amber }}>{e.codigo}</span>
+                      &nbsp;—&nbsp;
+                      <span style={{ color: online ? T.verde : T.textMuted, fontWeight: 600 }}>
+                        {online ? 'Conectada' : 'Aguardando'}
+                      </span>
+                    </p>
+                  </div>
+                  <button style={s.btnDel} onClick={() => deletarEquipe(e.codigo)}>x</button>
                 </div>
-                <button style={s.btnDel} onClick={() => deletarEquipe(e.codigo)}>x</button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -367,6 +383,7 @@ const s = {
   rankInfo: { color: T.textMuted, fontSize: 12, margin: 0 },
   notifItem: { display: 'flex', gap: 12, padding: '8px 0', borderBottom: `0.5px solid ${T.surface2}`, alignItems: 'flex-start' },
   btnIniciar: { width: '100%', background: T.gradFull, color: '#fff', border: 'none', borderRadius: 16, padding: '18px', fontSize: 17, fontWeight: 900, cursor: 'pointer', letterSpacing: 1, marginBottom: 28 },
+  statusDot: { width: 8, height: 8, borderRadius: '50%', flexShrink: 0, marginTop: 4 },
   uploadArea: { display: 'block', background: T.surface2, border: `1px dashed ${T.border}`, borderRadius: 12, padding: 16, cursor: 'pointer', minHeight: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' },
   altRow: { display: 'flex', gap: 8, alignItems: 'flex-start' },
   altFields: { display: 'flex', flexDirection: 'column', gap: 6, flex: 1 },
